@@ -11,7 +11,7 @@ import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from . import batch, core, settings
+from . import __version__, batch, core, settings
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,6 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Λήψη τιμών κλεισίματος ΧΑ και αποθήκευση σε MetaStock txt.",
     )
     p.add_argument("date", nargs="?", help="ημερομηνία ΗΗ/ΜΜ/ΕΕΕΕ")
+    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     p.add_argument("--from", dest="date_from", metavar="ΗΗ/ΜΜ/ΕΕΕΕ", help="αρχή εύρους")
     p.add_argument("--to", dest="date_to", metavar="ΗΗ/ΜΜ/ΕΕΕΕ", help="τέλος εύρους (προεπιλογή: σήμερα)")
     p.add_argument("--update", "--catch-up", dest="update", action="store_true",

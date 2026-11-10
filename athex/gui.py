@@ -13,7 +13,7 @@ import ttkbootstrap as tb
 from ttkbootstrap.widgets.dateentry import DateEntry
 from ttkbootstrap.widgets.tableview import Tableview
 
-from . import batch, core, settings
+from . import __version__, batch, core, settings
 
 TITLE = "ATHEX → MetaStock"
 THEME = "flatly"
@@ -60,7 +60,7 @@ def open_folder(path: Path) -> None:
 
 class App:
     def __init__(self):
-        self.root = tb.Window(title=TITLE, themename=THEME, size=(940, 720), minsize=(820, 600))
+        self.root = tb.Window(title=f"{TITLE}  v{__version__}", themename=THEME, size=(940, 720), minsize=(820, 600))
         self.out_dir = settings.output_dir()
         self.events = queue.Queue()
         self.cancel = threading.Event()
@@ -81,6 +81,7 @@ class App:
         header = tb.Frame(root)
         header.pack(fill="x", padx=12, pady=(12, 0))
         tb.Label(header, text=TITLE, font=("", 16, "bold")).pack(side="left")
+        tb.Label(header, text=f"v{__version__}", bootstyle="secondary").pack(side="left", padx=(6, 0))
         tb.Label(header, text="Τιμές κλεισίματος ΧΑ σε αρχεία MetaStock (UTF-8, ελληνικά σύμβολα)",
                  bootstyle="secondary").pack(side="left", padx=12)
 
