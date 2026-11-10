@@ -1,0 +1,75 @@
+name: Build Windows exe
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed only to attach the zip to a Release when a v* tag is pushed
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Tests (output must stay byte-identical to the reference file)
+        run: python -m pytest -q
+
+      - name: Build ATHEX.exe
+        run: >
+          pyinstaller --noconfirm --clean --windowed --onedir --name ATHEX
+          --collect-data ttkbootstrap --copy-metadata ttkbootstrap
+          athex_to_metastock.py
+
+      - name: Smoke test - command line starts
+        run: |
+          $p = Start-Process dist\ATHEX\ATHEX.exe -ArgumentList '--help' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "ATHEX.exe --help exited with $($p.ExitCode)" }
+
+      - name: Smoke test - window opens and stays open
+        run: |
+          $p = Start-Process dist\ATHEX\ATHEX.exe -PassThru
+          Start-Sleep -Seconds 15
+          if ($p.HasExited) { throw "ATHEX.exe window exited early with code $($p.ExitCode)" }
+          Stop-Process -Id $p.Id -Force
+          Write-Host "Window was still running after 15 s"
+
+      - name: Smoke test - real download from ATHEX (informational)
+        continue-on-error: true
+        run: |
+          $p = Start-Process dist\ATHEX\ATHEX.exe -ArgumentList '--update','--out','smoke' -Wait -PassThru
+          Get-Content "$env:APPDATA\athex_metastock\athex.log" -Encoding utf8 -ErrorAction SilentlyContinue
+          $files = @(Get-ChildItem smoke -Filter 'athex_*.txt' -ErrorAction SilentlyContinue)
+          Write-Host "exit=$($p.ExitCode) files=$($files.Count)"
+          if ($files.Count -eq 0) { throw "No files downloaded (ATHEX may block or be unreachable from GitHub runners)" }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ATHEX-windows
+          path: dist/ATHEX
+          if-no-files-found: error
+
+      - name: Attach zip to Release (only for v* tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          Compress-Archive -Path dist\ATHEX -DestinationPath ATHEX-windows.zip
+          gh release create "${{ github.ref_name }}" ATHEX-windows.zip --title "${{ github.ref_name }}" --generate-notes

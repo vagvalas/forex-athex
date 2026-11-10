@@ -1,0 +1,3 @@
+# Fixtures must stay byte-identical (CRLF, UTF-8): never convert line endings
+tests/fixtures/** -text
+*.bat text eol=crlf

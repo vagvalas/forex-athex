@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.venv-win/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Sample outputs in the project root (real output goes to the folder chosen in the app)
+/athex_*.txt
+
+.DS_Store
